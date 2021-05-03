@@ -1,35 +1,46 @@
-import interpreters.{Printer, Evaluator}
-import algebra.{ExpAlg, MinusAlg}
+import algebra.expalg.ExpAlg
+import algebra.minusalg.MinusAlg
+import cats.implicits._
+import interpreters.evaluator.Evaluator
+import interpreters.evaluator.Evaluator.eval
+import interpreters.printer.Printer
+import interpreters.printer.Printer.print
 import zio.console.putStrLn
-import zio.{App, ExitCode, Has, ULayer, URIO, URLayer, ZEnv, ZIO, ZLayer}
+import zio.{App, ExitCode, Has, Tag, ULayer, URIO, ZEnv, ZLayer}
 
 object Main extends App {
-  implicit val e1: ExpAlg[Evaluator]   = EvalExpAlg
-  implicit val e2: MinusAlg[Evaluator] = EvalMinusAlg
-  implicit val p1: ExpAlg[Printer]     = PrintExpAlg
-  implicit val p2: MinusAlg[Printer]   = PrintMinusAlg
+  val e1: ExpAlg.Service[ULayer[Evaluator]]   = EvalExpAlg
+  val e2: MinusAlg.Service[ULayer[Evaluator]] = EvalMinusAlg
+  val p1: ExpAlg.Service[ULayer[Printer]]     = PrintExpAlg
+  val p2: MinusAlg.Service[ULayer[Printer]]   = PrintMinusAlg
 
-  val interpretersExprAlg: ULayer[Has[ExpAlg[Has[Printer] with Has[Evaluator]]]] =
-    ZLayer.succeed(ExpAlg.lift[Printer, Evaluator])
+  def splitLayer[A: Tag, B: Tag](layer: ULayer[Has[A] with Has[B]]): (ULayer[Has[A]], ULayer[Has[B]]) =
+    (layer.map(a => Has(a.get[A])), layer.map(b => Has(b.get[B])))
 
-  val interpretersMinusAlg: ULayer[Has[MinusAlg[Has[Printer] with Has[Evaluator]]]] =
-    ZLayer.succeed(MinusAlg.lift[Printer, Evaluator])
+  val ep1: ExpAlg.Service[ULayer[Evaluator with Printer]] =
+    (e1, p1)
+      .imapN(_ ++ _)(splitLayer[Evaluator.Service, Printer.Service])
 
-  val expression: URLayer[Has[MinusAlg[Has[Printer] with Has[Evaluator]]] with Has[ExpAlg[Has[Printer] with Has[Evaluator]]], Has[Printer] with Has[Evaluator]] =
-    Expressions.exp3[Has[Printer] with Has[Evaluator]].toLayer.map(_.get)
+  val lep1: ULayer[ExpAlg[ULayer[Evaluator with Printer]]] =
+    ZLayer.succeed(ep1)
 
-  val dependencies: ULayer[Has[Printer] with Has[Evaluator]] =
-    (interpretersExprAlg ++ interpretersMinusAlg) >>> expression
+  val ep2: MinusAlg.Service[ULayer[Evaluator with Printer]] =
+    (e2, p2)
+      .imapN(_ ++ _ )(splitLayer[Evaluator.Service, Printer.Service])
 
-  override def run(args: List[String]): URIO[ZEnv, ExitCode] = {
-    (
-      for {
-        printer        <- ZIO.service[Printer]
-        evaluator      <- ZIO.service[Evaluator]
-        _              <- putStrLn(s"Printed: ${printer.print}")
-        _              <- putStrLn(s"Evaluated: ${evaluator.eval}")
-      } yield ()
-    ).provideCustomLayer(dependencies)
-      .exitCode
-  }
+  val lep2: ULayer[MinusAlg[ULayer[Evaluator with Printer]]] =
+    ZLayer.succeed(ep2)
+
+  val dependencies: ULayer[ExpAlg[ULayer[Evaluator with Printer]] with MinusAlg[ULayer[Evaluator with Printer]]] =
+    lep1 ++ lep2
+
+  override def run(args: List[String]): URIO[ZEnv, ExitCode] = (
+    for {
+      exp            <- Expressions.exp2[ULayer[Evaluator with Printer]]
+      (p, e)         <- print.zip(eval).provideCustomLayer(exp)
+      _              <- putStrLn(s"Printed: $p")
+      _              <- putStrLn(s"Evaluated: $e")
+    } yield ()
+  ).provideCustomLayer(dependencies)
+    .exitCode
 }
