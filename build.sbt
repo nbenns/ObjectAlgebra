@@ -2,12 +2,13 @@ name := "FPObjAlgebra"
 
 version := "0.1"
 
-scalaVersion := "2.13.5"
+scalaVersion := "3.0.1"
 
-val zioVersion = "1.0.6"
+scalacOptions ++= Seq(
+  "-Xsource:3"
+)
 
 libraryDependencies ++= Seq(
-  "dev.zio"  %% "zio" % zioVersion,
-  "org.typelevel" %% "cats-core" % "2.3.0",
-  "dev.zio"  %% "zio-interop-cats" % "2.4.1.0"
+  "dev.zio"  %% "zio" % "1.0.10",
+  "org.typelevel" %% "cats-core" % "2.6.1"
 )

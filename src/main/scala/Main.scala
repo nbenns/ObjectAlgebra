@@ -1,44 +1,38 @@
-import algebra._
-import cats.implicits._
-import interpreters._
-import interpreters.Evaluator.eval
-import interpreters.Printer.print
+import algebra.*
+import cats.implicits.*
+import cats.InvariantSemigroupal
+import interpreters.*
 import zio.console.putStrLn
-import zio._
+import zio.*
 
 object Main extends App {
-  val e1: ExpAlg[ULayer[Has[Evaluator]]]   = EvalExpAlg
-  val e2: MinusAlg[ULayer[Has[Evaluator]]] = EvalMinusAlg
-  val p1: ExpAlg[ULayer[Has[Printer]]]     = PrintExpAlg
-  val p2: MinusAlg[ULayer[Has[Printer]]]   = PrintMinusAlg
+  def composeInner[F[_]: InvariantSemigroupal, A: Tag, B: Tag](fa: F[Has[A]], fb: F[Has[B]]): F[Has[A] & Has[B]] =
+    (fa, fb)
+      .imapN { (hasA, hasB) =>
+        val a = hasA.get[A]
+        val b = hasB.get[B]
+        val res = hasA ++ hasB
+        res
+      } { combined =>
+        val a = combined.get[A]
+        val b = combined.get[B]
 
-  def splitLayer[A: Tag, B: Tag](layer: ULayer[Has[A] with Has[B]]): (ULayer[Has[A]], ULayer[Has[B]]) =
-    (layer.map(a => Has(a.get[A])), layer.map(b => Has(b.get[B])))
+        (Has(a), Has(b))
+      }
 
-  val ep1: ExpAlg[ULayer[Has[Evaluator] with Has[Printer]]] =
-    (e1, p1)
-      .imapN(_ ++ _)(splitLayer[Evaluator, Printer])
+  implicit val ep1: ExpAlg[Has[Evaluator] & Has[Printer]] = composeInner[ExpAlg, Evaluator, Printer](EvalExpAlg, PrintExpAlg)
+  implicit val ep2: MinusAlg[Has[Evaluator] & Has[Printer]] = composeInner[MinusAlg, Evaluator, Printer](EvalMinusAlg, PrintMinusAlg)
 
-  val lep1: ULayer[Has[ExpAlg[ULayer[Has[Evaluator] with Has[Printer]]]]] =
-    ZLayer.succeed(ep1)
+  override def run(args: List[String]): URIO[ZEnv, ExitCode] = {
+    val exp: Has[Evaluator] & Has[Printer] = Expressions.exp2[Has[Evaluator] & Has[Printer]]
 
-  val ep2: MinusAlg[ULayer[Has[Evaluator] with Has[Printer]]] =
-    (e2, p2)
-      .imapN(_ ++ _ )(splitLayer[Evaluator, Printer])
+    val printer: Printer = exp.get[Printer]
+    val evaluator: Evaluator = exp.get[Evaluator]
 
-  val lep2: ULayer[Has[MinusAlg[ULayer[Has[Evaluator] with Has[Printer]]]]] =
-    ZLayer.succeed(ep2)
+    val printed: String = printer.print
+    val evaluated: Int = evaluator.eval
 
-  val dependencies: ULayer[Has[ExpAlg[ULayer[Has[Evaluator] with Has[Printer]]]] with Has[MinusAlg[ULayer[Has[Evaluator] with Has[Printer]]]]] =
-    lep1 ++ lep2
-
-  override def run(args: List[String]): URIO[ZEnv, ExitCode] = (
-    for {
-      exp            <- Expressions.exp2[ULayer[Has[Evaluator] with Has[Printer]]]
-      (p, e)         <- print.zip(eval).provideCustomLayer(exp)
-      _              <- putStrLn(s"Printed: $p")
-      _              <- putStrLn(s"Evaluated: $e")
-    } yield ()
-  ).provideCustomLayer(dependencies)
-    .exitCode
+    putStrLn(s"Printed: $printed") *>
+    putStrLn(s"Evaluated: $evaluated")
+  }.exitCode
 }
