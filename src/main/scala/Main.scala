@@ -2,11 +2,11 @@ import algebra.*
 import cats.implicits.*
 import cats.InvariantSemigroupal
 import interpreters.*
-import zio.console.putStrLn
+import zio.Console.putStrLn
 import zio.*
 
 object Main extends App {
-  def composeInner[F[_]: InvariantSemigroupal, A: Tag, B: Tag](fa: F[Has[A]], fb: F[Has[B]]): F[Has[A] & Has[B]] =
+  def mergeInterpreters[F[_]: InvariantSemigroupal, A: Tag, B: Tag](fa: F[Has[A]], fb: F[Has[B]]): F[Has[A] & Has[B]] =
     (fa, fb)
       .imapN { (hasA, hasB) =>
         val a = hasA.get[A]
@@ -20,8 +20,11 @@ object Main extends App {
         (Has(a), Has(b))
       }
 
-  implicit val ep1: ExpAlg[Has[Evaluator] & Has[Printer]] = composeInner[ExpAlg, Evaluator, Printer](EvalExpAlg, PrintExpAlg)
-  implicit val ep2: MinusAlg[Has[Evaluator] & Has[Printer]] = composeInner[MinusAlg, Evaluator, Printer](EvalMinusAlg, PrintMinusAlg)
+  implicit val ep1: ExpAlg[Has[Evaluator] & Has[Printer]] =
+    mergeInterpreters[ExpAlg, Evaluator, Printer](EvalExpAlg, PrintExpAlg)
+
+  implicit val ep2: MinusAlg[Has[Evaluator] & Has[Printer]] =
+    mergeInterpreters[MinusAlg, Evaluator, Printer](EvalMinusAlg, PrintMinusAlg)
 
   override def run(args: List[String]): URIO[ZEnv, ExitCode] = {
     val exp: Has[Evaluator] & Has[Printer] = Expressions.exp2[Has[Evaluator] & Has[Printer]]

@@ -9,6 +9,6 @@ scalacOptions ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "dev.zio"  %% "zio" % "1.0.10",
+  "dev.zio"  %% "zio" % "2.0.0-M1",
   "org.typelevel" %% "cats-core" % "2.6.1"
 )
