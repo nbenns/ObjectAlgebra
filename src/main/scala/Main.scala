@@ -11,7 +11,7 @@ object Main extends App {
       .imapN { (hasA, hasB) =>
         val a = hasA.get[A]
         val b = hasB.get[B]
-        val res = hasA ++ hasB
+        val res = hasA ++ hasB  // This breaks in Scala 3
         res
       } { combined =>
         val a = combined.get[A]
