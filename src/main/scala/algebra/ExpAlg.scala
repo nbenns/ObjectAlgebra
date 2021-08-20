@@ -5,6 +5,14 @@ import cats.InvariantSemigroupal
 trait ExpAlg[A] {
   def Lit(x: Int): A
   def Add(a: A, b: A): A
+
+  extension(a: A) {
+    def +(b: A): A = Add(a, b)
+  }
+
+  extension(x: Int) {
+    def lit: A = Lit(x)
+  }
 }
 
 object ExpAlg {

@@ -4,6 +4,10 @@ import cats.InvariantSemigroupal
 
 trait MinusAlg[A] {
   def Minus(a: A, b: A): A
+
+  extension(a: A) {
+    def -(b: A): A = Minus(a, b)
+  }
 }
 
 object MinusAlg {

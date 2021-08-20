@@ -2,14 +2,14 @@ import algebra.ExpAlg
 import interpreters.Evaluator
 import zio.Has
 
-object EvalExpAlg extends ExpAlg[Has[Evaluator]] {
-  override def Lit(x: Int): Has[Evaluator] =
-    Has(new Evaluator {
+object EvalExpAlg extends ExpAlg[Evaluator] {
+  override def Lit(x: Int): Evaluator =
+    new Evaluator {
       override def eval: Int = x
-    })
+    }
 
-  override def Add(e1: Has[Evaluator], e2: Has[Evaluator]): Has[Evaluator] =
-    Has(new Evaluator {
-      override def eval: Int = e1.get.eval + e2.get.eval
-    })
+  override def Add(e1: Evaluator, e2: Evaluator): Evaluator =
+    new Evaluator {
+      override def eval: Int = e1.eval + e2.eval
+    }
 }
