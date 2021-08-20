@@ -21,7 +21,7 @@ object ExpAlg {
   def lit[E: ExpAlg](x: Int): E = ExpAlg[E].Lit(x)
   def add[E: ExpAlg](e1: E, e2: E): E = ExpAlg[E].Add(e1, e2)
 
-  implicit val ise: InvariantSemigroupal[ExpAlg] = new InvariantSemigroupal[ExpAlg] {
+  given InvariantSemigroupal[ExpAlg] with {
     override def imap[A, B](fa: ExpAlg[A])(f: A => B)(g: B => A): ExpAlg[B] =
       new ExpAlg[B] {
         override def Lit(x: Int): B = f(fa.Lit(x))

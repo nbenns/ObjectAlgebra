@@ -5,7 +5,14 @@ version := "0.1"
 scalaVersion := "3.0.1"
 
 scalacOptions ++= Seq(
-  "-Xsource:3"
+  "-unchecked",
+  "-deprecation",
+  "utf8",
+  "-feature",
+  "literal-types",
+  "-Xfatal-warnings",
+  "-Yexplicit-nulls",
+  "-source:future"
 )
 
 resolvers +=

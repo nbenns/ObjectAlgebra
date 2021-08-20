@@ -15,7 +15,7 @@ object MinusAlg {
 
   def minus[E: MinusAlg](e1: E, e2: E): E = MinusAlg[E].Minus(e1, e2)
 
-  implicit val ism: InvariantSemigroupal[MinusAlg] = new InvariantSemigroupal[MinusAlg] {
+  given InvariantSemigroupal[MinusAlg] with {
     override def product[A, B](fa: MinusAlg[A], fb: MinusAlg[B]): MinusAlg[(A, B)] =
       new MinusAlg[(A, B)] {
         override def Minus(e1: (A, B), e2: (A, B)): (A, B) = (fa.Minus(e1._1, e2._1), fb.Minus(e1._2, e2._2))

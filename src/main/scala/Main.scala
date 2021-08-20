@@ -1,5 +1,5 @@
 import algebra.*
-import cats.implicits.*
+import cats.implicits.given
 import cats.InvariantSemigroupal
 import interpreters.*
 import zio.Console.printLine
@@ -7,7 +7,7 @@ import zio.*
 
 object Main extends App {
   extension[F[_]: InvariantSemigroupal, A: Tag](fa: F[Has[A]]) {
-    def &[B: Tag](fb: F[Has[B]])(implicit ev:Tag[Has[B]]): F[Has[A] & Has[B]] =
+    def &[B: Tag](fb: F[Has[B]])(using ev:Tag[Has[B]]): F[Has[A] & Has[B]] =
       (fa, fb).imapN(_ ++ _)(combined => (Has(combined.get[A]), Has(combined.get[B])))
   }
 
@@ -15,8 +15,8 @@ object Main extends App {
     def has: F[Has[A]] = fa.imap(Has.apply)(_.get)
   }
 
-  implicit val ep1: ExpAlg[Has[Evaluator] & Has[Printer]] = EvalExpAlg.has & PrintExpAlg.has
-  implicit val ep2: MinusAlg[Has[Evaluator] & Has[Printer]] = EvalMinusAlg.has & PrintMinusAlg.has
+  given ExpAlg[Has[Evaluator] & Has[Printer]] = EvalExpAlg.has & PrintExpAlg.has
+  given MinusAlg[Has[Evaluator] & Has[Printer]] = EvalMinusAlg.has & PrintMinusAlg.has
 
   override def run(args: List[String]): URIO[ZEnv, ExitCode] = {
     val exp: Has[Evaluator] & Has[Printer] = Expressions.exp2[Has[Evaluator] & Has[Printer]]
