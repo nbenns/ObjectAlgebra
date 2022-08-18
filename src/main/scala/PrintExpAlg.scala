@@ -1,6 +1,5 @@
 import algebra.ExpAlg
 import interpreters.Printer
-import zio.{Has, ULayer, ZLayer}
 
 object PrintExpAlg extends ExpAlg[Printer] {
   override def Lit(x: Int): Printer =

@@ -5,21 +5,23 @@ import interpreters.*
 import zio.Console.printLine
 import zio.*
 
-object Main extends App {
-  extension[F[_]: InvariantSemigroupal, A: Tag](fa: F[Has[A]]) {
-    def &[B: Tag](fb: F[Has[B]])(using ev:Tag[Has[B]]): F[Has[A] & Has[B]] =
-      (fa, fb).imapN(_ ++ _)(combined => (Has(combined.get[A]), Has(combined.get[B])))
+import java.io.IOException
+
+object Main extends ZIOAppDefault {
+  extension[F[_]: InvariantSemigroupal, A: Tag](fa: F[ZEnvironment[A]]) {
+    def &[B: Tag](fb: F[ZEnvironment[B]]): F[ZEnvironment[A & B]] =
+      (fa, fb).imapN(_ ++ _)(combined => (ZEnvironment(combined.get[A]), ZEnvironment(combined.get[B])))
   }
 
   extension[F[_]: InvariantSemigroupal, A: Tag](fa: F[A]) {
-    def has: F[Has[A]] = fa.imap(Has.apply)(_.get)
+    def env: F[ZEnvironment[A]] = fa.imap(ZEnvironment.apply)(_.get)
   }
 
-  given ExpAlg[Has[Evaluator] & Has[Printer]] = EvalExpAlg.has & PrintExpAlg.has
-  given MinusAlg[Has[Evaluator] & Has[Printer]] = EvalMinusAlg.has & PrintMinusAlg.has
+  given ExpAlg[ZEnvironment[Evaluator & Printer]] = EvalExpAlg.env & PrintExpAlg.env
+  given MinusAlg[ZEnvironment[Evaluator & Printer]] = EvalMinusAlg.env & PrintMinusAlg.env
 
-  override def run(args: List[String]): URIO[ZEnv, ExitCode] = {
-    val exp: Has[Evaluator] & Has[Printer] = Expressions.exp2[Has[Evaluator] & Has[Printer]]
+  override def run: ZIO[Any, IOException, Unit] = {
+    val exp: ZEnvironment[Evaluator & Printer] = Expressions.exp2[ZEnvironment[Evaluator & Printer]]
 
     val printer: Printer = exp.get[Printer]
     val evaluator: Evaluator = exp.get[Evaluator]
@@ -29,5 +31,5 @@ object Main extends App {
 
     printLine(s"Printed: $printed") *>
     printLine(s"Evaluated: $evaluated")
-  }.exitCode
+  }
 }

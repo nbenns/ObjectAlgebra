@@ -1,6 +1,5 @@
 import algebra.MinusAlg
 import interpreters.Printer
-import zio.Has
 
 object PrintMinusAlg extends MinusAlg[Printer] {
   override def Minus(e1: Printer, e2: Printer): Printer =

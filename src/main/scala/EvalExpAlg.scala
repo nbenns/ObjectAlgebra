@@ -1,6 +1,5 @@
 import algebra.ExpAlg
 import interpreters.Evaluator
-import zio.Has
 
 object EvalExpAlg extends ExpAlg[Evaluator] {
   override def Lit(x: Int): Evaluator =
