@@ -16,7 +16,7 @@ trait ExpAlg[A] {
 }
 
 object ExpAlg {
-  def apply[E](implicit expAlg: ExpAlg[E]): ExpAlg[E] = expAlg
+  def apply[E](using expAlg: ExpAlg[E]): ExpAlg[E] = expAlg
 
   def lit[E: ExpAlg](x: Int): E = ExpAlg[E].Lit(x)
   def add[E: ExpAlg](e1: E, e2: E): E = ExpAlg[E].Add(e1, e2)

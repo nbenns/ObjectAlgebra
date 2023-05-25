@@ -8,12 +8,12 @@ import zio.*
 import java.io.IOException
 
 object Main extends ZIOAppDefault {
-  extension[F[_]: InvariantSemigroupal, A: Tag](fa: F[ZEnvironment[A]]) {
+  extension[F[_] : InvariantSemigroupal, A: Tag] (fa: F[ZEnvironment[A]]) {
     def &[B: Tag](fb: F[ZEnvironment[B]]): F[ZEnvironment[A & B]] =
       (fa, fb).imapN(_ ++ _)(combined => (ZEnvironment(combined.get[A]), ZEnvironment(combined.get[B])))
   }
 
-  extension[F[_]: InvariantSemigroupal, A: Tag](fa: F[A]) {
+  extension[F[_] : InvariantSemigroupal, A: Tag] (fa: F[A]) {
     def env: F[ZEnvironment[A]] = fa.imap(ZEnvironment.apply)(_.get)
   }
 

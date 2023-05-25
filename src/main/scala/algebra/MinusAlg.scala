@@ -11,7 +11,7 @@ trait MinusAlg[A] {
 }
 
 object MinusAlg {
-  def apply[E](implicit minusAlg: MinusAlg[E]): MinusAlg[E] = minusAlg
+  def apply[E](using minusAlg: MinusAlg[E]): MinusAlg[E] = minusAlg
 
   def minus[E: MinusAlg](e1: E, e2: E): E = MinusAlg[E].Minus(e1, e2)
 
